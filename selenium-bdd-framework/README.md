@@ -1,5 +1,7 @@
 # 🚀 Selenium Python BDD Test Automation Framework
 
+![Tests](https://github.com/Evens30/testAutomationFramework-aiGenerate/actions/workflows/tests.yml/badge.svg)
+
 A comprehensive **Behavior-Driven Development (BDD)** test automation framework using **Selenium WebDriver**, **Python**, **pytest-bdd**, and **Gherkin** syntax with complete **CI/CD integration** for Jenkins.
 
 ## 📋 Table of Contents
