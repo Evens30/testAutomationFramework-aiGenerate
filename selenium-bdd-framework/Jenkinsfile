@@ -1,0 +1,264 @@
+pipeline {
+    agent any
+    
+    options {
+        // Keep only last 10 builds
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        // Add timestamps to console output
+        timestamps()
+        // Timeout for the entire pipeline
+        timeout(time: 1, unit: 'HOURS')
+    }
+    
+    parameters {
+        choice(
+            name: 'BROWSER',
+            choices: ['chrome', 'firefox', 'edge'],
+            description: 'Browser to run tests'
+        )
+        choice(
+            name: 'ENVIRONMENT',
+            choices: ['staging', 'qa', 'production'],
+            description: 'Environment to test'
+        )
+        booleanParam(
+            name: 'HEADLESS',
+            defaultValue: true,
+            description: 'Run browser in headless mode'
+        )
+        choice(
+            name: 'TEST_SUITE',
+            choices: ['all', 'smoke', 'regression', 'critical'],
+            description: 'Test suite to execute'
+        )
+        string(
+            name: 'PARALLEL_WORKERS',
+            defaultValue: '4',
+            description: 'Number of parallel workers'
+        )
+    }
+    
+    environment {
+        // Environment variables
+        BROWSER = "${params.BROWSER}"
+        ENVIRONMENT = "${params.ENVIRONMENT}"
+        HEADLESS = "${params.HEADLESS}"
+        BASE_URL = getBaseUrl("${params.ENVIRONMENT}")
+        PARALLEL_TESTS = "${params.PARALLEL_WORKERS}"
+        
+        // Python virtual environment
+        VENV_DIR = "${WORKSPACE}/venv"
+        
+        // Report paths
+        REPORTS_DIR = "${WORKSPACE}/reports"
+        ALLURE_RESULTS = "${WORKSPACE}/reports/allure-results"
+    }
+    
+    stages {
+        stage('Cleanup') {
+            steps {
+                script {
+                    echo '🧹 Cleaning workspace...'
+                    deleteDir()
+                }
+            }
+        }
+        
+        stage('Checkout') {
+            steps {
+                script {
+                    echo '📥 Checking out code...'
+                    checkout scm
+                }
+            }
+        }
+        
+        stage('Setup Python Environment') {
+            steps {
+                script {
+                    echo '🐍 Setting up Python virtual environment...'
+                    sh '''
+                        python3 -m venv ${VENV_DIR}
+                        . ${VENV_DIR}/bin/activate
+                        pip install --upgrade pip
+                        pip install -r requirements.txt
+                    '''
+                }
+            }
+        }
+        
+        stage('Run Tests') {
+            steps {
+                script {
+                    echo "🧪 Running ${params.TEST_SUITE} tests..."
+                    
+                    def testCommand = getTestCommand(params.TEST_SUITE)
+                    
+                    sh """
+                        . ${VENV_DIR}/bin/activate
+                        ${testCommand}
+                    """
+                }
+            }
+            post {
+                always {
+                    script {
+                        echo '📸 Archiving screenshots...'
+                        archiveArtifacts artifacts: 'reports/screenshots/*.png', 
+                                       allowEmptyArchive: true
+                    }
+                }
+            }
+        }
+        
+        stage('Generate Reports') {
+            steps {
+                script {
+                    echo '📊 Generating test reports...'
+                    
+                    // Publish HTML report
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll: true,
+                        reportDir: 'reports',
+                        reportFiles: 'test_report.html',
+                        reportName: 'HTML Test Report',
+                        reportTitles: 'BDD Test Report'
+                    ])
+                    
+                    // Publish Allure report
+                    allure([
+                        includeProperties: false,
+                        jdk: '',
+                        properties: [],
+                        reportBuildPolicy: 'ALWAYS',
+                        results: [[path: 'reports/allure-results']]
+                    ])
+                }
+            }
+        }
+        
+        stage('Analyze Results') {
+            steps {
+                script {
+                    echo '📈 Analyzing test results...'
+                    
+                    // Read JSON report
+                    def jsonReport = readJSON file: 'reports/bdd_report.json'
+                    
+                    def summary = jsonReport.summary
+                    def totalTests = summary.total ?: 0
+                    def passed = summary.passed ?: 0
+                    def failed = summary.failed ?: 0
+                    def skipped = summary.skipped ?: 0
+                    
+                    echo "Total Tests: ${totalTests}"
+                    echo "Passed: ${passed}"
+                    echo "Failed: ${failed}"
+                    echo "Skipped: ${skipped}"
+                    
+                    // Calculate pass rate
+                    def passRate = totalTests > 0 ? (passed / totalTests) * 100 : 0
+                    echo "Pass Rate: ${passRate.round(2)}%"
+                    
+                    // Set build description
+                    currentBuild.description = "Pass Rate: ${passRate.round(2)}% | ${passed}/${totalTests} passed"
+                    
+                    // Mark build as unstable if pass rate is below threshold
+                    if (passRate < 80) {
+                        currentBuild.result = 'UNSTABLE'
+                        echo '⚠️ Build marked as UNSTABLE - Pass rate below 80%'
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            script {
+                echo '📁 Archiving reports...'
+                
+                // Archive all reports
+                archiveArtifacts artifacts: 'reports/**/*', 
+                               allowEmptyArchive: true
+                
+                // Archive logs
+                archiveArtifacts artifacts: 'reports/logs/*.log', 
+                               allowEmptyArchive: true
+            }
+        }
+        
+        success {
+            script {
+                echo '✅ Build completed successfully!'
+                
+                // Send notification (configure as needed)
+                // emailext (
+                //     subject: "✅ Build #${env.BUILD_NUMBER} - SUCCESS",
+                //     body: "Test execution completed successfully.",
+                //     to: "team@example.com"
+                // )
+            }
+        }
+        
+        failure {
+            script {
+                echo '❌ Build failed!'
+                
+                // Send notification (configure as needed)
+                // emailext (
+                //     subject: "❌ Build #${env.BUILD_NUMBER} - FAILED",
+                //     body: "Test execution failed. Please check the reports.",
+                //     to: "team@example.com"
+                // )
+            }
+        }
+        
+        unstable {
+            script {
+                echo '⚠️ Build is unstable!'
+            }
+        }
+        
+        cleanup {
+            script {
+                echo '🧹 Cleaning up...'
+                // Clean workspace if needed
+                // cleanWs()
+            }
+        }
+    }
+}
+
+// Helper function to get base URL based on environment
+def getBaseUrl(environment) {
+    switch(environment) {
+        case 'staging':
+            return 'https://www.saucedemo.com'
+        case 'qa':
+            return 'https://qa.saucedemo.com'
+        case 'production':
+            return 'https://www.saucedemo.com'
+        default:
+            return 'https://www.saucedemo.com'
+    }
+}
+
+// Helper function to get test command based on suite
+def getTestCommand(testSuite) {
+    def baseCommand = 'pytest'
+    
+    switch(testSuite) {
+        case 'smoke':
+            return "${baseCommand} -m smoke -n ${PARALLEL_TESTS}"
+        case 'regression':
+            return "${baseCommand} -m regression -n ${PARALLEL_TESTS}"
+        case 'critical':
+            return "${baseCommand} -m critical -n ${PARALLEL_TESTS}"
+        case 'all':
+        default:
+            return "${baseCommand} -n ${PARALLEL_TESTS}"
+    }
+}

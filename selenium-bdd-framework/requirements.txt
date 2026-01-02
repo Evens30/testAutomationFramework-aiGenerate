@@ -1,0 +1,32 @@
+# Selenium and WebDriver
+selenium>=4.15.2
+webdriver-manager>=4.0.1
+
+# Testing Framework
+pytest>=7.4.3
+pytest-html>=4.1.1
+pytest-xdist>=3.5.0
+pytest-rerunfailures>=12.0
+
+# BDD Support
+pytest-bdd>=7.0.1
+gherkin-official>=27.0.0
+
+# Reporting
+allure-pytest>=2.13.2
+html-testRunner>=1.2.1
+
+# Data Management
+openpyxl>=3.1.2
+faker>=20.1.0
+
+# Utilities
+python-dotenv>=1.0.0
+pillow>=10.1.0
+
+# Logging
+colorlog>=6.8.0
+
+# CI/CD Support
+pytest-json-report>=1.5.0
+pytest-metadata>=3.0.0

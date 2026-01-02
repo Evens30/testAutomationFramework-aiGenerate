@@ -1,0 +1,47 @@
+pipeline {
+    agent any
+    
+    stages {
+        stage('Setup') {
+            steps {
+                sh '''
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip install -r requirements.txt
+                '''
+            }
+        }
+        
+        stage('Run BDD Tests') {
+            steps {
+                sh '''
+                    . venv/bin/activate
+                    pytest -m smoke --alluredir=reports/allure-results
+                '''
+            }
+        }
+        
+        stage('Generate Reports') {
+            steps {
+                allure includeProperties: false, 
+                       jdk: '', 
+                       results: [[path: 'reports/allure-results']]
+                       
+                publishHTML([
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'reports',
+                    reportFiles: 'test_report.html',
+                    reportName: 'HTML Report'
+                ])
+            }
+        }
+    }
+    
+    post {
+        always {
+            archiveArtifacts artifacts: 'reports/**/*', allowEmptyArchive: true
+        }
+    }
+}

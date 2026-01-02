@@ -1,0 +1,97 @@
+{
+    "total_tests": 8,
+    "passed": 8,
+    "failed": 0,
+    "tests": [
+        {
+            "name": "test_view_products_on_inventory_page",
+            "outcome": "passed",
+            "duration": 3.3959565000259317,
+            "timestamp": "2026-01-01T09:36:43.383111",
+            "feature": "Unknown",
+            "tags": [
+                "smoke",
+                "critical"
+            ]
+        },
+        {
+            "name": "test_add_single_product_to_cart",
+            "outcome": "passed",
+            "duration": 3.8300099999760278,
+            "timestamp": "2026-01-01T09:36:49.322482",
+            "feature": "Unknown",
+            "tags": [
+                "smoke"
+            ]
+        },
+        {
+            "name": "test_navigate_to_shopping_cart",
+            "outcome": "passed",
+            "duration": 3.4894460000214167,
+            "timestamp": "2026-01-01T09:36:54.933419",
+            "feature": "Unknown",
+            "tags": [
+                "smoke"
+            ]
+        },
+        {
+            "name": "test_logout_from_application",
+            "outcome": "passed",
+            "duration": 4.028124400007073,
+            "timestamp": "2026-01-01T09:37:01.083879",
+            "feature": "Unknown",
+            "tags": [
+                "smoke",
+                "critical"
+            ]
+        },
+        {
+            "name": "test_successful_login_with_valid_credentials",
+            "outcome": "passed",
+            "duration": 3.356717699964065,
+            "timestamp": "2026-01-01T09:37:06.561445",
+            "feature": "Unknown",
+            "tags": [
+                "smoke",
+                "critical",
+                "login"
+            ]
+        },
+        {
+            "name": "test_login_with_different_user_types[standard_user-secret_sauce-products]",
+            "outcome": "passed",
+            "duration": 3.338718199986033,
+            "timestamp": "2026-01-01T09:37:12.008161",
+            "feature": "Unknown",
+            "tags": [
+                "parametrize",
+                "smoke",
+                "login"
+            ]
+        },
+        {
+            "name": "test_login_with_different_user_types[problem_user-secret_sauce-products]",
+            "outcome": "passed",
+            "duration": 3.3626953000202775,
+            "timestamp": "2026-01-01T09:37:17.486618",
+            "feature": "Unknown",
+            "tags": [
+                "parametrize",
+                "smoke",
+                "login"
+            ]
+        },
+        {
+            "name": "test_login_with_different_user_types[performance_glitch_user-secret_sauce-products]",
+            "outcome": "passed",
+            "duration": 8.300238800002262,
+            "timestamp": "2026-01-01T09:37:27.912362",
+            "feature": "Unknown",
+            "tags": [
+                "parametrize",
+                "smoke",
+                "login"
+            ]
+        }
+    ]
+}

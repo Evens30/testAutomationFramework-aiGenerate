@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  selenium-tests:
+    build: .
+    container_name: selenium-bdd-tests
+    volumes:
+      - ./reports:/app/reports
+      - ./features:/app/features
+      - ./step_definitions:/app/step_definitions
+    environment:
+      - BROWSER=chrome
+      - HEADLESS=True
+      - BASE_URL=https://www.saucedemo.com
+      - ENVIRONMENT=staging
+    command: pytest -m smoke -n 4 --alluredir=reports/allure-results
+    
+  selenium-grid-chrome:
+    image: selenium/standalone-chrome:latest
+    container_name: selenium-chrome
+    ports:
+      - "4444:4444"
+    shm_size: 2gb
+    environment:
+      - SE_NODE_MAX_SESSIONS=5
+      
+  selenium-grid-firefox:
+    image: selenium/standalone-firefox:latest
+    container_name: selenium-firefox
+    ports:
+      - "4445:4444"
+    shm_size: 2gb
+    environment:
+      - SE_NODE_MAX_SESSIONS=5
+
+networks:
+  default:
+    name: selenium-network
