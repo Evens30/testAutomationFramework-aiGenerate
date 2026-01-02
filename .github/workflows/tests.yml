@@ -1,0 +1,112 @@
+name: Selenium BDD Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  HEADLESS: "true"
+  BROWSER: "chrome"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: selenium-bdd-framework/requirements.txt
+
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: Install dependencies
+        working-directory: selenium-bdd-framework
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run BDD tests
+        working-directory: selenium-bdd-framework
+        run: |
+          pytest step_definitions/ \
+            --html=reports/test_report.html \
+            --self-contained-html \
+            --json-report \
+            --json-report-file=reports/test_results.json \
+            -v \
+            --tb=short
+        continue-on-error: true
+
+      - name: Upload test reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports
+          path: |
+            selenium-bdd-framework/reports/
+            selenium-bdd-framework/screenshots/
+          retention-days: 30
+
+      - name: Upload Allure results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: allure-results
+          path: selenium-bdd-framework/reports/allure-results/
+          retention-days: 30
+
+  smoke-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+          cache-dependency-path: selenium-bdd-framework/requirements.txt
+
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: Install dependencies
+        working-directory: selenium-bdd-framework
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run smoke tests
+        working-directory: selenium-bdd-framework
+        run: |
+          pytest step_definitions/ \
+            -m smoke \
+            --html=reports/smoke_report.html \
+            --self-contained-html \
+            -v \
+            --tb=short
+        continue-on-error: true
+
+      - name: Upload smoke test reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-test-reports
+          path: selenium-bdd-framework/reports/
+          retention-days: 30
